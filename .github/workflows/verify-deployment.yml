@@ -1,0 +1,25 @@
+name: Verify EdgeEver deployment
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe EdgeEver endpoints
+        run: |
+          set -uo pipefail
+          B=https://edgeever.huangres.workers.dev
+          echo "--- health"
+          curl -sS -m 30 -o /tmp/health.json -w "status=%{http_code}\n" "$B/api/health" || echo "curl failed: $?"
+          head -c 1200 /tmp/health.json 2>/dev/null; echo
+          echo "--- openapi"
+          curl -sS -m 30 -o /tmp/oas.json -w "status=%{http_code}\n" "$B/api/openapi.json" || echo "curl failed: $?"
+          head -c 600 /tmp/oas.json 2>/dev/null; echo
+          echo "--- login"
+          curl -sS -m 30 -o /tmp/login.json -w "status=%{http_code}\n" -X POST \
+            -H 'Content-Type: application/json' \
+            -d '{"username":"admin","password":"18727353590"}' \
+            "$B/api/v1/auth/login" || echo "curl failed: $?"
+          head -c 800 /tmp/login.json 2>/dev/null; echo
